@@ -40,8 +40,8 @@ describe('TestController', () => {
   });
 
   describe('how', () => {
-    it('should return "Hey! How are you?"', () => {
-      expect(testController.getHowAreYou()).toBe('Hey! How are you?');
+    it('should return "Hi! How are you?"', () => {
+      expect(testController.getHowAreYou()).toBe('Hi! How are you?');
     });
   });
 });
