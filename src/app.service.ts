@@ -11,6 +11,6 @@ export class AppService {
   }
 
   public getHowAreYou(): string {
-    return 'Hi! How are you?';
+    return 'Hello! How are you?';
   }
 }
