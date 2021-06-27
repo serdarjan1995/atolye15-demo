@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atolye15-demo-ingress
+  namespace: stage
+spec:
+  rules:
+  - host: atolye15-demo.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atolye15-demo-service
+            port:
+              number: 80

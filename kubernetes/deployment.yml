@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atolye15-demo
+  namespace: stage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atolye15-demo
+  template:
+    metadata:
+      labels:
+        app: atolye15-demo
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
+      containers:
+      - name: atolye15-demo
+        image: serdarjan1995/atolye15-demo:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000

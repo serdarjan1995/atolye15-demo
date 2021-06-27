@@ -1,0 +1,133 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@4.1
+
+jobs:
+  run-tests:
+    docker:
+      - image: cimg/node:15.1
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - dependencies-{{ checksum "package.json" }}
+          - dependencies-
+      - node/install-packages:
+          pkg-manager: yarn
+      - save_cache:
+          paths:
+            - node_modules
+          key: dependencies-{{ checksum "package.json" }}
+      - run:
+          name: Run lint rules
+          command: yarn lint
+      - run:
+          name: Run format check
+          command: yarn format:check
+      - run:
+          name: Run unit tests
+          command: yarn test
+      - run:
+          name: Run coverage test
+          command: yarn test:cov
+      - run:
+          name: Run E2E test
+          command: yarn test:e2e
+
+  run-build-and-push:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.6
+      - run:
+          name: Build Docker Image
+          command: docker build . -t $DOCKERHUB_LOGIN/$CIRCLE_PROJECT_REPONAME
+      - run:
+          name: Dockerhub login
+          command: |
+            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_LOGIN --password-stdin
+      - run:
+          name: Docker image push
+          command: docker push $DOCKERHUB_LOGIN/$CIRCLE_PROJECT_REPONAME:$TAG
+
+  run-deploy:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    environment:
+      IMAGE_NAME: $DOCKERHUB_LOGIN/$CIRCLE_PROJECT_REPONAME
+    working_directory: ~/app
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Prepare Kubernetes Cert
+          command: |
+            echo "$KUBERNETES_CLUSTER_CERTIFICATE" | base64 --decode > cert.crt
+      - run:
+          name: Apply Kubernetes namespace
+          command: |
+            kubectl \
+            --kubeconfig=/dev/null \
+            --server=$KUBERNETES_SERVER \
+            --certificate-authority=cert.crt \
+            --token=$KUBERNETES_TOKEN \
+            apply -f ./kubernetes/create-stage.yml
+      - run:
+          name: Apply Kubernetes Dockerhubsecret
+          command: |
+            kubectl \
+            --kubeconfig=/dev/null \
+            --server=$KUBERNETES_SERVER \
+            --certificate-authority=cert.crt \
+            --token=$KUBERNETES_TOKEN \
+            apply -f ./kubernetes/dockerhub-secret.yml
+      - run:
+          name: Apply Kubernetes deployment
+          command: |
+            kubectl \
+            --kubeconfig=/dev/null \
+            --server=$KUBERNETES_SERVER \
+            --certificate-authority=cert.crt \
+            --token=$KUBERNETES_TOKEN \
+            apply -f ./kubernetes/deployment.yml
+      - run:
+          name: Apply Kubernetes service
+          command: |
+            kubectl \
+            --kubeconfig=/dev/null \
+            --server=$KUBERNETES_SERVER \
+            --certificate-authority=cert.crt \
+            --token=$KUBERNETES_TOKEN \
+            apply -f ./kubernetes/service.yml
+      - run:
+          name: Apply Kubernetes ingress
+          command: |
+            kubectl \
+            --kubeconfig=/dev/null \
+            --server=$KUBERNETES_SERVER \
+            --certificate-authority=cert.crt \
+            --token=$KUBERNETES_TOKEN \
+            apply -f ./kubernetes/ingress.yml
+
+workflows:
+  test-build-deploy:
+    jobs:
+      - run-tests:
+        filters:
+          branches:
+            only: /^((?!pull\/).)*$/
+
+      - run-build-and-push:
+          requires: [run-tests]
+          filters:
+            branches:
+              only: [master, develop]
+
+      - run-deploy:
+          requires: [run-build-and-push]
+          filters:
+            branches:
+              only: [master, develop]
