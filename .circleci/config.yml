@@ -78,7 +78,7 @@ jobs:
       - run:
           name: Apply Kubernetes namespace
           command: |
-            kubectl \
+            ./kubectl \
             --kubeconfig=/dev/null \
             --server=$KUBERNETES_SERVER \
             --certificate-authority=cert.crt \
@@ -87,7 +87,7 @@ jobs:
       - run:
           name: Apply Kubernetes Dockerhubsecret
           command: |
-            kubectl \
+            ./kubectl \
             --kubeconfig=/dev/null \
             --server=$KUBERNETES_SERVER \
             --certificate-authority=cert.crt \
@@ -96,7 +96,7 @@ jobs:
       - run:
           name: Apply Kubernetes deployment
           command: |
-            kubectl \
+            ./kubectl \
             --kubeconfig=/dev/null \
             --server=$KUBERNETES_SERVER \
             --certificate-authority=cert.crt \
@@ -105,7 +105,7 @@ jobs:
       - run:
           name: Apply Kubernetes service
           command: |
-            kubectl \
+            ./kubectl \
             --kubeconfig=/dev/null \
             --server=$KUBERNETES_SERVER \
             --certificate-authority=cert.crt \
@@ -114,7 +114,7 @@ jobs:
       - run:
           name: Apply Kubernetes ingress
           command: |
-            kubectl \
+            ./kubectl \
             --kubeconfig=/dev/null \
             --server=$KUBERNETES_SERVER \
             --certificate-authority=cert.crt \
